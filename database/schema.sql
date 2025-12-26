@@ -1,0 +1,22 @@
+CREATE TABLE Doctor (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  speciality VARCHAR(50)
+);
+
+CREATE TABLE Patient (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  phone VARCHAR(15)
+);
+
+CREATE TABLE Appointment (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  appointment_time DATETIME NOT NULL,
+  doctor_id BIGINT,
+  patient_id BIGINT,
+  FOREIGN KEY (doctor_id) REFERENCES Doctor(id),
+  FOREIGN KEY (patient_id) REFERENCES Patient(id)
+);
