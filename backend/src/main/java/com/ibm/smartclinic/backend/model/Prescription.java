@@ -13,6 +13,7 @@ public class Prescription {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @jakarta.validation.constraints.NotBlank(message = "Prescription notes must not be blank")
     private String notes;
 
     @ManyToOne

@@ -1,7 +1,8 @@
 package com.ibm.smartclinic.backend.controller;
 
-import com.ibm.smartclinic.backend.exception.ResourceNotFoundException;
-import com.ibm.smartclinic.backend.exception.ValidationException;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import com.ibm.smartclinic.backend.model.Doctor;
 import com.ibm.smartclinic.backend.service.DoctorService;
 import org.springframework.http.ResponseEntity;
@@ -27,35 +28,21 @@ public class DoctorController {
     }
 
     @GetMapping("/{doctorId}/availability")
-    public ResponseEntity<?> getDoctorAvailability(
-            @PathVariable Long doctorId,
-            @RequestParam String date) {
-
-        if (doctorId == null || doctorId <= 0) {
-            throw new ResourceNotFoundException("Doctor", "id", doctorId);
-        }
-
-        if (date == null || date.isEmpty()) {
-            throw new ValidationException("Date parameter is required", "date");
-        }
-
+        public ResponseEntity<?> getDoctorAvailability(
+            @PathVariable @Min(value = 1, message = "Doctor ID must be positive") Long doctorId,
+            @RequestParam @NotBlank(message = "Date parameter is required") String date) {
         return ResponseEntity.ok(
-                doctorService.getAvailableTimeSlots(
-                        doctorId,
-                        LocalDate.parse(date)
-                )
+            doctorService.getAvailableTimeSlots(
+                doctorId,
+                LocalDate.parse(date)
+            )
         );
-    }
+        }
 
     @GetMapping("/search")
     public ResponseEntity<?> searchDoctors(
-            @RequestParam String speciality,
+            @RequestParam @NotBlank(message = "Speciality parameter is required") String speciality,
             @RequestParam(required = false) String time) {
-
-        if (speciality == null || speciality.isEmpty()) {
-            throw new ValidationException("Speciality parameter is required", "speciality");
-        }
-
         return ResponseEntity.ok(
                 doctorService.getAllDoctors().stream()
                         .filter(d -> d.getSpeciality().equalsIgnoreCase(speciality))

@@ -1,6 +1,7 @@
 package com.ibm.smartclinic.backend.controller;
 
-import com.ibm.smartclinic.backend.exception.ResourceNotFoundException;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import com.ibm.smartclinic.backend.model.Appointment;
 import com.ibm.smartclinic.backend.service.AppointmentService;
 import org.springframework.http.HttpStatus;
@@ -20,10 +21,7 @@ public class AppointmentController {
 
     @GetMapping("/patient/{patientId}")
     public ResponseEntity<List<Appointment>> getAppointmentsByPatient(
-            @PathVariable Long patientId) {
-        if (patientId == null || patientId <= 0) {
-            throw new ResourceNotFoundException("Patient", "id", patientId);
-        }
+            @PathVariable @Min(value = 1, message = "Patient ID must be positive") Long patientId) {
         List<Appointment> appointments = appointmentService
                 .getAppointmentsForDoctorOnDate(patientId, null);
         return ResponseEntity.ok(appointments);
@@ -31,7 +29,7 @@ public class AppointmentController {
 
     @PostMapping
     public ResponseEntity<Appointment> bookAppointment(
-            @RequestBody Appointment appointment) {
+            @Valid @RequestBody Appointment appointment) {
         Appointment booked = appointmentService.bookAppointment(appointment);
         return ResponseEntity.status(HttpStatus.CREATED).body(booked);
     }

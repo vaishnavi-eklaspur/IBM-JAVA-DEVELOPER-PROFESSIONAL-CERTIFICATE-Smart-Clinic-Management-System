@@ -18,13 +18,18 @@ public class Appointment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull
+
+    @NotNull(message = "Appointment time is required")
     private LocalDateTime appointmentTime;
 
-    @ManyToOne
-    private Doctor doctor;
 
     @ManyToOne
+    @NotNull(message = "Doctor is required")
+    private Doctor doctor;
+
+
+    @ManyToOne
+    @NotNull(message = "Patient is required")
     private Patient patient;
 
     @Enumerated(EnumType.STRING)
