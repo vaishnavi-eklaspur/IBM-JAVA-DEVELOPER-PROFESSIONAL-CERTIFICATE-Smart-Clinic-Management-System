@@ -8,6 +8,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
+
 @Entity
 public class Appointment {
 
@@ -23,6 +26,9 @@ public class Appointment {
 
     @ManyToOne
     private Patient patient;
+
+    @Enumerated(EnumType.STRING)
+    private AppointmentStatus status;
 
     // Getters and Setters
     public Long getId() {
@@ -55,5 +61,13 @@ public class Appointment {
 
     public void setPatient(Patient patient) {
         this.patient = patient;
+    }
+
+    public AppointmentStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AppointmentStatus status) {
+        this.status = status;
     }
 }

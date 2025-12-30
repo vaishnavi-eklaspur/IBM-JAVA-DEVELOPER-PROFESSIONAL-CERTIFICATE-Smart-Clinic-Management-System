@@ -14,9 +14,10 @@ public class TokenService {
 
     private static final String SECRET_KEY = "ibm-smart-clinic-secret-key-123456";
 
-    public String generateToken(String email) {
+    public String generateToken(String email, String role) {
         return Jwts.builder()
                 .setSubject(email)
+                .claim("role", role)
                 .signWith(getSigningKey())
                 .compact();
     }
@@ -43,6 +44,19 @@ public class TokenService {
                     .parseClaimsJws(token)
                     .getBody();
             return claims.getSubject();
+        } catch (JwtException e) {
+            return null;
+        }
+    }
+
+    public String getRole(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            return claims.get("role", String.class);
         } catch (JwtException e) {
             return null;
         }
