@@ -19,6 +19,8 @@ public class Doctor {
     private String email;
     private String speciality;
 
+    private String password;
+
     @ElementCollection
     private List<LocalTime> availableTimes;
 
@@ -53,6 +55,14 @@ public class Doctor {
 
     public void setSpeciality(String speciality) {
         this.speciality = speciality;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public List<LocalTime> getAvailableTimes() {

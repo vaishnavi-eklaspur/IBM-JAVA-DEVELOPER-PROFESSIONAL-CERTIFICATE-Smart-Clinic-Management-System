@@ -2,7 +2,10 @@ package com.ibm.smartclinic.backend.service;
 
 import com.ibm.smartclinic.backend.model.Doctor;
 import com.ibm.smartclinic.backend.repository.DoctorRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -13,9 +16,12 @@ import java.util.List;
 public class DoctorService {
 
     private final DoctorRepository doctorRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public DoctorService(DoctorRepository doctorRepository) {
+    @Autowired
+    public DoctorService(DoctorRepository doctorRepository, PasswordEncoder passwordEncoder) {
         this.doctorRepository = doctorRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     
@@ -35,9 +41,20 @@ public class DoctorService {
 
     
     public ResponseEntity<String> validateDoctorLogin(String email, String password) {
-        if (email != null && password != null) {
-            return ResponseEntity.ok("Doctor login successful");
+        if (email == null || password == null) {
+            return ResponseEntity.badRequest().body("Invalid credentials");
         }
-        return ResponseEntity.badRequest().body("Invalid credentials");
+        return doctorRepository.findByEmail(email)
+                .map(doctor -> passwordEncoder.matches(password, doctor.getPassword())
+                        ? ResponseEntity.ok("Doctor login successful")
+                        : ResponseEntity.status(401).body("Invalid credentials"))
+                .orElse(ResponseEntity.status(401).body("Invalid credentials"));
+    }
+
+    public Doctor saveDoctorWithHashedPassword(Doctor doctor) {
+        if (doctor.getPassword() != null) {
+            doctor.setPassword(passwordEncoder.encode(doctor.getPassword()));
+        }
+        return doctorRepository.save(doctor);
     }
 }
