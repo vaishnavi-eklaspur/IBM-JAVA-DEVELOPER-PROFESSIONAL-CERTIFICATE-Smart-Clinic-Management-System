@@ -1,9 +1,9 @@
+package com.ibm.smartclinic.backend.controller;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-package com.ibm.smartclinic.backend.controller;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import com.ibm.smartclinic.backend.model.Appointment;

@@ -1,8 +1,3 @@
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-    public Page<Appointment> getAppointmentsByPatientId(Long patientId, Pageable pageable) {
-        return appointmentRepository.findByPatientId(patientId, pageable);
-    }
 package com.ibm.smartclinic.backend.service;
 
 import com.ibm.smartclinic.backend.exception.ConflictException;
@@ -18,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @Transactional
@@ -31,6 +28,10 @@ public class AppointmentService {
         this.appointmentRepository = appointmentRepository;
         this.doctorRepository = doctorRepository;
         this.patientRepository = patientRepository;
+    }
+
+    public Page<Appointment> getAppointmentsByPatientId(Long patientId, Pageable pageable) {
+        return appointmentRepository.findByPatientId(patientId, pageable);
     }
 
     public Appointment bookAppointment(Appointment appointment) {
