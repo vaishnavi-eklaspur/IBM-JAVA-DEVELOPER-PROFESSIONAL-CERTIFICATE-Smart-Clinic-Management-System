@@ -1,5 +1,7 @@
 package com.ibm.smartclinic.backend.service;
 
+import com.ibm.smartclinic.backend.exception.ConflictException;
+import com.ibm.smartclinic.backend.exception.ValidationException;
 import com.ibm.smartclinic.backend.model.Appointment;
 import com.ibm.smartclinic.backend.model.AppointmentStatus;
 import com.ibm.smartclinic.backend.model.Doctor;
@@ -27,16 +29,22 @@ public class AppointmentService {
     }
 
     public Appointment bookAppointment(Appointment appointment) {
-        // Conflict detection: prevent double-booking same doctor at same time
+        // Validate input
         if (appointment.getDoctor() == null || appointment.getAppointmentTime() == null) {
-            throw new IllegalArgumentException("Doctor and appointment time must be provided");
+            throw new ValidationException("Doctor and appointment time must be provided");
         }
+
+        // Conflict detection: prevent double-booking same doctor at same time
         boolean conflict = appointmentRepository.findByDoctorAndAppointmentTime(
                 appointment.getDoctor(), appointment.getAppointmentTime()
         ).isPresent();
         if (conflict) {
-            throw new IllegalStateException("Doctor is already booked at this time");
+            throw new ConflictException(
+                    "Doctor is already booked at this time",
+                    "DOUBLE_BOOKING"
+            );
         }
+
         appointment.setStatus(AppointmentStatus.BOOKED);
         return appointmentRepository.save(appointment);
     }

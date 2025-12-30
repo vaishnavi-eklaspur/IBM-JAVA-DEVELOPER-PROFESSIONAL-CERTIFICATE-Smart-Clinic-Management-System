@@ -1,6 +1,8 @@
 package com.ibm.smartclinic.backend.controller;
 
+import com.ibm.smartclinic.backend.exception.ValidationException;
 import com.ibm.smartclinic.backend.model.Prescription;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,18 +11,23 @@ import org.springframework.web.bind.annotation.*;
 public class PrescriptionController {
 
     @PostMapping
-    public ResponseEntity<?> savePrescription(
-            @RequestHeader("Authorization") String token,
+    public ResponseEntity<String> savePrescription(
+            @RequestHeader(value = "Authorization", required = false) String token,
             @RequestBody Prescription prescription) {
 
         if (token == null || token.isEmpty()) {
-            return ResponseEntity.status(401).body("Unauthorized request");
+            throw new ValidationException("Authorization header is required", "Authorization");
         }
 
         if (prescription == null) {
-            return ResponseEntity.badRequest().body("Invalid prescription data");
+            throw new ValidationException("Invalid prescription data", "prescription");
         }
 
-        return ResponseEntity.ok("Prescription saved successfully");
+        if (prescription.getNotes() == null || prescription.getNotes().isEmpty()) {
+            throw new ValidationException("Prescription notes are required", "notes");
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body("Prescription saved successfully");
     }
 }

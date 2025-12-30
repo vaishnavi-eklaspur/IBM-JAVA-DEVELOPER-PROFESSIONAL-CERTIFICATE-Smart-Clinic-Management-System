@@ -1,5 +1,7 @@
 package com.ibm.smartclinic.backend.service;
 
+import com.ibm.smartclinic.backend.exception.ResourceNotFoundException;
+import com.ibm.smartclinic.backend.exception.ValidationException;
 import com.ibm.smartclinic.backend.model.Doctor;
 import com.ibm.smartclinic.backend.repository.DoctorRepository;
 
@@ -42,13 +44,13 @@ public class DoctorService {
     
     public ResponseEntity<String> validateDoctorLogin(String email, String password) {
         if (email == null || password == null) {
-            return ResponseEntity.badRequest().body("Invalid credentials");
+            throw new ValidationException("Email and password are required");
         }
         return doctorRepository.findByEmail(email)
                 .map(doctor -> passwordEncoder.matches(password, doctor.getPassword())
                         ? ResponseEntity.ok("Doctor login successful")
                         : ResponseEntity.status(401).body("Invalid credentials"))
-                .orElse(ResponseEntity.status(401).body("Invalid credentials"));
+                .orElseThrow(() -> new ResourceNotFoundException("Doctor", "email", email));
     }
 
     public Doctor saveDoctorWithHashedPassword(Doctor doctor) {
