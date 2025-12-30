@@ -1,3 +1,12 @@
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+    public Page<Doctor> getAllDoctors(Pageable pageable) {
+        return doctorRepository.findAll(pageable);
+    }
+
+    public Page<Doctor> findBySpeciality(String speciality, Pageable pageable) {
+        return doctorRepository.findBySpecialityIgnoreCase(speciality, pageable);
+    }
 package com.ibm.smartclinic.backend.service;
 
 import com.ibm.smartclinic.backend.exception.ResourceNotFoundException;

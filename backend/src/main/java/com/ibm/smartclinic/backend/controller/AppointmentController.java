@@ -1,3 +1,7 @@
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 package com.ibm.smartclinic.backend.controller;
 
 import jakarta.validation.Valid;
@@ -10,7 +14,9 @@ import com.ibm.smartclinic.backend.service.AppointmentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
 @RestController
 @RequestMapping("/api/appointments")
@@ -22,15 +28,31 @@ public class AppointmentController {
         this.appointmentService = appointmentService;
     }
 
+    @Operation(summary = "Get paginated list of appointments for a patient", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "List of appointments returned"),
+        @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "404", description = "Patient not found")
+    })
     @GetMapping("/patient/{patientId}")
-        public ResponseEntity<List<AppointmentResponseDto>> getAppointmentsByPatient(
-            @PathVariable @Min(value = 1, message = "Patient ID must be positive") Long patientId) {
-        List<AppointmentResponseDto> dtos = appointmentService
-            .getAppointmentsForDoctorOnDate(patientId, null)
-            .stream().map(this::toAppointmentResponseDto).toList();
-        return ResponseEntity.ok(dtos);
-        }
+    public ResponseEntity<Page<AppointmentResponseDto>> getAppointmentsByPatient(
+            @PathVariable @Min(value = 1, message = "Patient ID must be positive") Long patientId,
+            @PageableDefault(size = 20, sort = "appointmentTime") Pageable pageable) {
+        Page<Appointment> page = appointmentService.getAppointmentsByPatientId(patientId, pageable);
+        Page<AppointmentResponseDto> dtoPage = page.map(this::toAppointmentResponseDto);
+        return ResponseEntity.ok(dtoPage);
+    }
 
+    @Operation(summary = "Book a new appointment", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Appointment booked successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request body or validation error"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "409", description = "Doctor already booked at this time")
+    })
     @PostMapping
     public ResponseEntity<AppointmentResponseDto> bookAppointment(
             @Valid @RequestBody Appointment appointment) {

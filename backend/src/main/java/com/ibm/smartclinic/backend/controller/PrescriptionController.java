@@ -1,3 +1,7 @@
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 package com.ibm.smartclinic.backend.controller;
 
 import com.ibm.smartclinic.backend.model.Prescription;
@@ -14,6 +18,14 @@ import jakarta.validation.constraints.NotBlank;
 @RequestMapping("/api/prescriptions")
 public class PrescriptionController {
 
+    @Operation(summary = "Create a new prescription", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Prescription created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request body or validation error"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "404", description = "Appointment not found")
+    })
     @PostMapping
     public ResponseEntity<PrescriptionResponseDto> savePrescription(
             @RequestHeader(value = "Authorization", required = false) @NotBlank(message = "Authorization header is required") String token,

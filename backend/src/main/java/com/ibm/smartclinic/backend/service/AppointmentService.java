@@ -1,3 +1,8 @@
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+    public Page<Appointment> getAppointmentsByPatientId(Long patientId, Pageable pageable) {
+        return appointmentRepository.findByPatientId(patientId, pageable);
+    }
 package com.ibm.smartclinic.backend.service;
 
 import com.ibm.smartclinic.backend.exception.ConflictException;
