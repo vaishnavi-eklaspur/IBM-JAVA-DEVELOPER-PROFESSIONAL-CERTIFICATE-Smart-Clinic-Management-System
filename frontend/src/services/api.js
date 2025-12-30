@@ -13,12 +13,11 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Graceful 401 handling
+// Graceful 401/403 handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Optionally clear localStorage and redirect to login
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       localStorage.removeItem("jwt");
       localStorage.removeItem("role");
       if (window.location.pathname !== "/login") {
