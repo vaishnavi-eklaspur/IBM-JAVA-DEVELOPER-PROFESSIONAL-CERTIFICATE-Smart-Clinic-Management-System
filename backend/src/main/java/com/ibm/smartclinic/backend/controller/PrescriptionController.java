@@ -1,24 +1,50 @@
 package com.ibm.smartclinic.backend.controller;
 
+import com.ibm.smartclinic.backend.dto.PrescriptionRequestDto;
+import com.ibm.smartclinic.backend.dto.PrescriptionResponseDto;
+import com.ibm.smartclinic.backend.exception.ResourceNotFoundException;
+import com.ibm.smartclinic.backend.exception.ValidationException;
+import com.ibm.smartclinic.backend.model.Doctor;
+import com.ibm.smartclinic.backend.model.Patient;
+import com.ibm.smartclinic.backend.service.DoctorService;
+import com.ibm.smartclinic.backend.service.PatientService;
+import com.ibm.smartclinic.backend.service.PrescriptionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import com.ibm.smartclinic.backend.model.Prescription;
-import com.ibm.smartclinic.backend.model.Appointment;
-import com.ibm.smartclinic.backend.dto.PrescriptionRequestDto;
-import com.ibm.smartclinic.backend.dto.PrescriptionResponseDto;
+import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
+import org.springframework.lang.NonNull;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/prescriptions")
+@SecurityRequirement(name = "bearerAuth")
 public class PrescriptionController {
 
-    @Operation(summary = "Create a new prescription", security = @SecurityRequirement(name = "bearerAuth"))
+    private final PrescriptionService prescriptionService;
+    private final DoctorService doctorService;
+    private final PatientService patientService;
+
+    public PrescriptionController(@NonNull PrescriptionService prescriptionService,
+                                  @NonNull DoctorService doctorService,
+                                  @NonNull PatientService patientService) {
+        this.prescriptionService = prescriptionService;
+        this.doctorService = doctorService;
+        this.patientService = patientService;
+    }
+
+    @Operation(summary = "Create a new prescription")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Prescription created successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid request body or validation error"),
@@ -26,27 +52,61 @@ public class PrescriptionController {
         @ApiResponse(responseCode = "403", description = "Forbidden"),
         @ApiResponse(responseCode = "404", description = "Appointment not found")
     })
+    @PreAuthorize("hasRole('DOCTOR')")
     @PostMapping
-    public ResponseEntity<PrescriptionResponseDto> savePrescription(
-            @RequestHeader(value = "Authorization", required = false) @NotBlank(message = "Authorization header is required") String token,
-            @Valid @RequestBody PrescriptionRequestDto prescriptionDto) {
-        // Simulate mapping and persistence (service layer would handle this in a real app)
-        Prescription prescription = new Prescription();
-        prescription.setNotes(prescriptionDto.getNotes());
-        Appointment appointment = new Appointment();
-        appointment.setId(prescriptionDto.getAppointmentId());
-        prescription.setAppointment(appointment);
-        // Simulate ID assignment
-        prescription.setId(1L);
-        PrescriptionResponseDto responseDto = toPrescriptionResponseDto(prescription);
+    public ResponseEntity<PrescriptionResponseDto> savePrescription(@Valid @RequestBody PrescriptionRequestDto prescriptionDto) {
+        Doctor doctor = resolveAuthenticatedDoctor();
+        PrescriptionResponseDto responseDto = prescriptionService.createPrescription(doctor, prescriptionDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
-    private PrescriptionResponseDto toPrescriptionResponseDto(Prescription prescription) {
-        return new PrescriptionResponseDto(
-                prescription.getId(),
-                prescription.getNotes(),
-                prescription.getAppointment() != null ? prescription.getAppointment().getId() : null
-        );
+    @Operation(summary = "Get prescriptions for authenticated doctor")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Prescriptions retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Forbidden")
+    })
+    @PreAuthorize("hasRole('DOCTOR')")
+    @GetMapping("/doctor")
+    public ResponseEntity<List<PrescriptionResponseDto>> getDoctorPrescriptions() {
+        Doctor doctor = resolveAuthenticatedDoctor();
+        return ResponseEntity.ok(prescriptionService.getPrescriptionsForDoctor(doctor.getId()));
+    }
+
+    @Operation(summary = "Get prescriptions for authenticated patient")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Prescriptions retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Forbidden")
+    })
+    @PreAuthorize("hasRole('PATIENT')")
+    @GetMapping("/patient")
+    public ResponseEntity<List<PrescriptionResponseDto>> getPatientPrescriptions() {
+        Patient patient = resolveAuthenticatedPatient();
+        return ResponseEntity.ok(prescriptionService.getPrescriptionsForPatient(patient.getId()));
+    }
+
+    private Doctor resolveAuthenticatedDoctor() {
+        String email = getCurrentUserEmail();
+        return doctorService.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Doctor", "email", email));
+    }
+
+    private Patient resolveAuthenticatedPatient() {
+        String email = getCurrentUserEmail();
+        return patientService.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient", "email", email));
+    }
+
+    private String getCurrentUserEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getPrincipal() == null) {
+            throw new ValidationException("Authentication is required");
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof String email) {
+            return email;
+        }
+        throw new ValidationException("Unsupported authentication principal type");
     }
 }

@@ -1,68 +1,69 @@
 package com.ibm.smartclinic.backend.security;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
-import org.springframework.stereotype.Service;
-
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Date;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 @Service
 public class TokenService {
 
-    private static final String SECRET_KEY = "ibm-smart-clinic-secret-key-123456";
+    private final Key signingKey;
+    private final long expirationMs;
+
+    public TokenService(@Value("${jwt.secret}") String secret,
+                        @Value("${jwt.expiration-ms}") long expirationMs) {
+        this.signingKey = Keys.hmacShaKeyFor(deriveKeyBytes(secret));
+        this.expirationMs = expirationMs;
+    }
 
     public String generateToken(String email, String role) {
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + expirationMs);
         return Jwts.builder()
                 .setSubject(email)
+                .setIssuedAt(now)
+                .setExpiration(expiration)
                 .claim("role", role)
-                .signWith(getSigningKey())
+                .signWith(signingKey)
                 .compact();
     }
 
     public boolean validateToken(String token) {
-        try {
-            Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
-                    .build()
-                    .parseClaimsJws(token);
-            return true;
-        } catch (ExpiredJwtException e) {
-            return false;
-        } catch (JwtException e) {
-            return false;
-        }
+        parseClaims(token);
+        return true;
     }
 
     public String getSubject(String token) {
-        try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-            return claims.getSubject();
-        } catch (JwtException e) {
-            return null;
-        }
+        return parseClaims(token).getSubject();
     }
 
     public String getRole(String token) {
-        try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-            return claims.get("role", String.class);
-        } catch (JwtException e) {
-            return null;
-        }
+        return parseClaims(token).get("role", String.class);
     }
 
-    private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    public Claims parseClaims(String token) throws ExpiredJwtException, JwtException {
+        return Jwts.parserBuilder()
+                .setSigningKey(signingKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    private byte[] deriveKeyBytes(String secret) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return digest.digest(secret.getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 algorithm not available", e);
+        }
     }
 }

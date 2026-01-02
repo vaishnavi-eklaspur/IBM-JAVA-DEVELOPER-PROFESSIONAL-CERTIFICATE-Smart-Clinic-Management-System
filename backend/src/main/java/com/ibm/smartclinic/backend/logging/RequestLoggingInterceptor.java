@@ -3,6 +3,8 @@ package com.ibm.smartclinic.backend.logging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -21,7 +23,9 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
     private static final String START_TIME = "requestStartTime";
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    public boolean preHandle(@NonNull HttpServletRequest request,
+                             @NonNull HttpServletResponse response,
+                             @NonNull Object handler) {
         String requestId = request.getHeader(REQUEST_ID_HEADER);
         if (requestId == null || requestId.isEmpty()) {
             requestId = UUID.randomUUID().toString();
@@ -33,7 +37,10 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+    public void afterCompletion(@NonNull HttpServletRequest request,
+                                @NonNull HttpServletResponse response,
+                                @NonNull Object handler,
+                                @Nullable Exception ex) {
         Long startTime = (Long) request.getAttribute(START_TIME);
         long duration = (startTime != null) ? (System.currentTimeMillis() - startTime) : -1;
         String requestId = MDC.get(MDC_REQUEST_ID_KEY);

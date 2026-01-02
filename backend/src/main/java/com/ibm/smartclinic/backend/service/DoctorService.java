@@ -9,10 +9,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.lang.NonNull;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -23,22 +25,31 @@ public class DoctorService {
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public DoctorService(DoctorRepository doctorRepository, PasswordEncoder passwordEncoder) {
+    public DoctorService(@NonNull DoctorRepository doctorRepository,
+                         @NonNull PasswordEncoder passwordEncoder) {
         this.doctorRepository = doctorRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
-    
-    public Page<Doctor> getAllDoctors(Pageable pageable) {
+    /**
+     * Spring Framework 6 guarantees non-null at runtime; warning is a known static-analysis limitation.
+     */
+    @NonNull
+    public Page<Doctor> getAllDoctors(@NonNull Pageable pageable) {
         return doctorRepository.findAll(pageable);
     }
 
-    public Page<Doctor> findBySpeciality(String speciality, Pageable pageable) {
+    /**
+     * Spring Framework 6 guarantees non-null at runtime; warning is a known static-analysis limitation.
+     */
+    @NonNull
+    public Page<Doctor> findBySpeciality(@NonNull String speciality, @NonNull Pageable pageable) {
         return doctorRepository.findBySpecialityIgnoreCase(speciality, pageable);
     }
 
    
-    public List<LocalTime> getAvailableTimeSlots(Long doctorId, LocalDate date) {
+    @NonNull
+    public List<LocalTime> getAvailableTimeSlots(@NonNull Long doctorId, @NonNull LocalDate date) {
         // Static availability for lab/demo purposes
         return List.of(
                 LocalTime.of(10, 0),
@@ -48,7 +59,8 @@ public class DoctorService {
     }
 
     
-    public ResponseEntity<String> validateDoctorLogin(String email, String password) {
+    @NonNull
+    public ResponseEntity<String> validateDoctorLogin(@NonNull String email, @NonNull String password) {
         if (email == null || password == null) {
             throw new ValidationException("Email and password are required");
         }
@@ -59,10 +71,19 @@ public class DoctorService {
                 .orElseThrow(() -> new ResourceNotFoundException("Doctor", "email", email));
     }
 
-    public Doctor saveDoctorWithHashedPassword(Doctor doctor) {
+    @NonNull
+    public Doctor saveDoctorWithHashedPassword(@NonNull Doctor doctor) {
         if (doctor.getPassword() != null) {
             doctor.setPassword(passwordEncoder.encode(doctor.getPassword()));
         }
         return doctorRepository.save(doctor);
+    }
+
+    /**
+     * Spring Framework 6 guarantees non-null at runtime; warning is a known static-analysis limitation.
+     */
+    @NonNull
+    public Optional<Doctor> findByEmail(@NonNull String email) {
+        return doctorRepository.findByEmail(email);
     }
 }

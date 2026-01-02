@@ -5,11 +5,13 @@ import com.ibm.smartclinic.backend.repository.DoctorRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 @Configuration
 public class DataLoader {
 
     @Bean
+    @DependsOn("flywayInitializer")
     CommandLineRunner loadDoctors(DoctorRepository doctorRepository) {
         return args -> {
 

@@ -33,7 +33,7 @@ public class Appointment {
     private Patient patient;
 
     @Enumerated(EnumType.STRING)
-    private AppointmentStatus status;
+    private AppointmentStatus status = AppointmentStatus.BOOKED;
 
     // Getters and Setters
     public Long getId() {
