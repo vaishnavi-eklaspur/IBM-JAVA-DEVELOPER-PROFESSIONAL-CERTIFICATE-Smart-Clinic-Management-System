@@ -30,6 +30,11 @@ public class PatientService {
         return patientRepository.save(patient);
     }
 
+    @NonNull
+    public Patient savePatient(@NonNull Patient patient) {
+        return patientRepository.save(patient);
+    }
+
     /**
      * Spring Framework 6 guarantees non-null at runtime; warning is a known static-analysis limitation.
      */

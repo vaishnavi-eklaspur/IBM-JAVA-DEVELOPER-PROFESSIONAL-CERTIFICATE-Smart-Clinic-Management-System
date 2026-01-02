@@ -79,6 +79,11 @@ public class DoctorService {
         return doctorRepository.save(doctor);
     }
 
+    @NonNull
+    public Doctor saveDoctor(@NonNull Doctor doctor) {
+        return doctorRepository.save(doctor);
+    }
+
     /**
      * Spring Framework 6 guarantees non-null at runtime; warning is a known static-analysis limitation.
      */
@@ -86,4 +91,11 @@ public class DoctorService {
     public Optional<Doctor> findByEmail(@NonNull String email) {
         return doctorRepository.findByEmail(email);
     }
+
+    @NonNull
+    public Doctor requireById(@NonNull Long doctorId) {
+        return doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Doctor", "id", doctorId));
+    }
+
 }

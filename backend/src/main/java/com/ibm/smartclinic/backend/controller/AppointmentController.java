@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import com.ibm.smartclinic.backend.dto.AppointmentRequestDto;
 import com.ibm.smartclinic.backend.exception.ResourceNotFoundException;
 import com.ibm.smartclinic.backend.exception.ValidationException;
 import com.ibm.smartclinic.backend.model.Appointment;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/appointments")
@@ -76,12 +78,35 @@ public class AppointmentController {
     @PreAuthorize("hasRole('PATIENT')")
     @PostMapping
         public ResponseEntity<AppointmentResponseDto> bookAppointment(
-            @Valid @RequestBody @NonNull Appointment appointment) {
-        Patient patient = resolveAuthenticatedPatient();
-        appointment.setPatient(patient);
-        Appointment booked = appointmentService.bookAppointment(appointment);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toAppointmentResponseDto(booked));
-    }
+                @Valid @RequestBody @NonNull AppointmentRequestDto requestDto) {
+            Patient patient = resolveAuthenticatedPatient();
+            Doctor doctor = doctorService.requireById(requestDto.getDoctorId());
+
+            Appointment appointment = new Appointment();
+            appointment.setAppointmentTime(requestDto.getAppointmentTime());
+            appointment.setDoctor(doctor);
+            appointment.setPatient(patient);
+
+            Appointment booked = appointmentService.bookAppointment(appointment);
+            return ResponseEntity.status(HttpStatus.CREATED).body(toAppointmentResponseDto(booked));
+        }
+
+        @Operation(summary = "Get authenticated doctor's appointments", security = @SecurityRequirement(name = "bearerAuth"))
+        @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Appointments returned"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden")
+        })
+        @PreAuthorize("hasRole('DOCTOR')")
+        @GetMapping("/doctor")
+        public ResponseEntity<List<AppointmentResponseDto>> getAppointmentsForDoctor() {
+            Doctor doctor = resolveAuthenticatedDoctor();
+            List<AppointmentResponseDto> responses = appointmentService.getAppointmentsForDoctor(doctor.getId())
+                    .stream()
+                    .map(this::toAppointmentResponseDto)
+                    .toList();
+            return ResponseEntity.ok(responses);
+        }
 
     @Operation(summary = "Mark appointment as completed", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({

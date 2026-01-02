@@ -44,6 +44,9 @@ public class AppointmentService {
         if (appointment.getDoctor() == null || appointment.getAppointmentTime() == null) {
             throw new ValidationException("Doctor and appointment time must be provided");
         }
+        if (appointment.getPatient() == null || appointment.getPatient().getId() == null) {
+            throw new ValidationException("Patient context is required to book an appointment", "patientId");
+        }
 
         // Conflict detection: prevent double-booking same doctor at same time
         boolean conflict = appointmentRepository.findByDoctorAndAppointmentTime(
@@ -69,6 +72,11 @@ public class AppointmentService {
                 .filter(a -> a.getDoctor().getId().equals(doctorId)
                         && a.getAppointmentTime().toLocalDate().equals(date))
                 .toList();
+    }
+
+    @NonNull
+    public List<Appointment> getAppointmentsForDoctor(@NonNull Long doctorId) {
+        return appointmentRepository.findByDoctorIdOrderByAppointmentTimeDesc(doctorId);
     }
 
     @NonNull
