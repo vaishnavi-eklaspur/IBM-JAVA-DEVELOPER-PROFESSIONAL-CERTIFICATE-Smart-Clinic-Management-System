@@ -1,27 +1,57 @@
 import api from "./api";
 
-export async function loginUser(username, password) {
+function transformError(error, fallbackMessage = "Request failed. Please try again.") {
+  const backendMessage = error?.response?.data?.message;
+  if (backendMessage) {
+    return new Error(backendMessage);
+  }
+  return new Error(fallbackMessage);
+}
+
+export async function doctorLogin({ email, password }) {
   try {
-    const response = await api.post("/auth/login", { username, password });
+    const response = await api.post("/doctor/login", { email, password });
     return response.data;
   } catch (error) {
-    if (error.response && error.response.data && error.response.data.message) {
-      throw new Error(error.response.data.message);
-    }
-    throw new Error("Login failed. Please try again.");
+    throw transformError(error, "Doctor login failed. Please verify your credentials.");
   }
 }
 
-export function storeAuth({ token, role }) {
-  localStorage.setItem("jwt", token);
-  localStorage.setItem("role", role);
+export async function patientLogin({ email, password }) {
+  try {
+    const response = await api.post("/patient/login", { email, password });
+    return response.data;
+  } catch (error) {
+    throw transformError(error, "Patient login failed. Please verify your credentials.");
+  }
 }
 
-export function clearAuth() {
-  localStorage.removeItem("jwt");
-  localStorage.removeItem("role");
+export async function doctorRegister({ name, email, speciality, password }) {
+  try {
+    const payload = {
+      name: name?.trim(),
+      email: email?.trim(),
+      speciality: speciality?.trim(),
+      password,
+    };
+    const response = await api.post("/doctor/register", payload);
+    return response.data;
+  } catch (error) {
+    throw transformError(error, "Unable to register doctor account.");
+  }
 }
 
-export function isAuthenticated() {
-  return Boolean(localStorage.getItem("jwt"));
+export async function patientRegister({ name, email, phone, password }) {
+  try {
+    const payload = {
+      name: name?.trim(),
+      email: email?.trim(),
+      phone: phone?.trim(),
+      password,
+    };
+    const response = await api.post("/patient/register", payload);
+    return response.data;
+  } catch (error) {
+    throw transformError(error, "Unable to register patient account.");
+  }
 }

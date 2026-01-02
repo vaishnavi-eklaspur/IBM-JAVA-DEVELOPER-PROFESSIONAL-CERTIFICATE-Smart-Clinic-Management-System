@@ -1,66 +1,98 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import Navbar from "../components/Navbar";
-import PageContainer from "../layout/PageContainer";
-import { loginUser, storeAuth } from "../services/auth";
+import React, { useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import AuthLayout from "../layout/AuthLayout";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+  const [role, setRole] = useState(location.state?.roleHint || "PATIENT");
+  const [email, setEmail] = useState(location.state?.registeredEmail || "");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const successMessage = useMemo(() => location.state?.message, [location.state]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
     try {
-      const data = await loginUser(username, password);
-      storeAuth({ token: data.token, role: data.role });
-      navigate("/dashboard");
+      await login(role, { email, password });
+      const destination = role === "DOCTOR" ? "/dashboard/doctor" : "/dashboard/patient";
+      navigate(destination, { replace: true });
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Login failed");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <Navbar />
-      <PageContainer>
-        <h2 className="text-2xl font-semibold text-neutral-800 mb-4">Login</h2>
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="border border-neutral-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
-            disabled={loading}
-            autoFocus
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border border-neutral-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
-            disabled={loading}
-          />
+    <AuthLayout>
+      <div className="space-y-6">
+        <header className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Sign in</p>
+          <h1 className="text-2xl font-semibold text-neutral-900">Access your workspace</h1>
+          <p className="text-sm text-neutral-600">
+            Use the credentials you created during registration to continue.
+          </p>
+        </header>
+        {successMessage && (
+          <p className="rounded-md border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            {successMessage}
+          </p>
+        )}
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-neutral-700">Role</label>
+            <select
+              value={role}
+              onChange={(event) => setRole(event.target.value)}
+              className="w-full rounded border border-neutral-300 px-3 py-2"
+            >
+              <option value="PATIENT">Patient</option>
+              <option value="DOCTOR">Doctor</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-neutral-700">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="w-full rounded border border-neutral-300 px-3 py-2"
+              required
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-neutral-700">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full rounded border border-neutral-300 px-3 py-2"
+              required
+            />
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             type="submit"
-            className={`bg-blue-700 text-white py-2 rounded transition font-medium ${loading ? "opacity-60 cursor-not-allowed" : "hover:bg-blue-100 hover:text-blue-700"}`}
-            disabled={loading}
+            className="w-full rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+            disabled={isSubmitting}
           >
-            {loading ? "Logging in..." : "Login"}
+            {isSubmitting ? "Signing in..." : "Sign In"}
           </button>
-          {error && (
-            <div className="text-red-600 text-sm mt-1" role="alert">{error}</div>
-          )}
         </form>
-      </PageContainer>
-    </div>
+        <p className="text-sm text-neutral-600">
+          Need an account?{" "}
+          <Link to="/register" className="font-semibold text-blue-700 hover:underline">
+            Create one here
+          </Link>
+          .
+        </p>
+      </div>
+    </AuthLayout>
   );
 }
