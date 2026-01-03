@@ -1,23 +1,29 @@
 package com.ibm.smartclinic.backend.config;
 
 import com.ibm.smartclinic.backend.model.Doctor;
+import com.ibm.smartclinic.backend.model.UserIdentity;
+import com.ibm.smartclinic.backend.model.UserRole;
 import com.ibm.smartclinic.backend.repository.DoctorRepository;
+import com.ibm.smartclinic.backend.service.IdentityService;
+import java.util.List;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.List;
-
 @Configuration
+@Profile("dev")
 public class DataLoader {
 
     private static final String DEFAULT_DOCTOR_PASSWORD = "password";
 
     @Bean
     @DependsOn("flywayInitializer")
-    CommandLineRunner loadDoctors(DoctorRepository doctorRepository, PasswordEncoder passwordEncoder) {
+    CommandLineRunner loadDoctors(DoctorRepository doctorRepository,
+                                 PasswordEncoder passwordEncoder,
+                                 IdentityService identityService) {
         return args -> {
             List<SeedDoctor> seedDoctors = List.of(
                     new SeedDoctor("Dr John Smith", "john@clinic.com", "Cardiology"),
@@ -25,9 +31,11 @@ public class DataLoader {
             );
 
             for (SeedDoctor seed : seedDoctors) {
-                Doctor doctor = doctorRepository.findByEmail(seed.email()).orElseGet(Doctor::new);
+                UserIdentity identity = identityService.provisionIdentity(seed.email(), UserRole.DOCTOR, DEFAULT_DOCTOR_PASSWORD);
+
+                Doctor doctor = doctorRepository.findByEmail(identity.getEmail()).orElseGet(Doctor::new);
                 doctor.setName(seed.name());
-                doctor.setEmail(seed.email());
+                doctor.setEmail(identity.getEmail());
                 doctor.setSpeciality(seed.speciality());
 
                 if (needsPasswordRefresh(doctor.getPassword(), passwordEncoder)) {
